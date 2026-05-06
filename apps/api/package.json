@@ -1,0 +1,22 @@
+{
+  "name": "@focuscube/api",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:create": "wrangler d1 create focuscube",
+    "db:migrate:local": "wrangler d1 migrations apply focuscube --local",
+    "db:migrate:remote": "wrangler d1 migrations apply focuscube --remote",
+    "db:studio": "wrangler d1 execute focuscube --command \"SELECT name FROM sqlite_master WHERE type='table';\""
+  },
+  "dependencies": {
+    "hono": "^4.6.13"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250101.0",
+    "typescript": "~6.0.2",
+    "wrangler": "^4.87.0"
+  }
+}

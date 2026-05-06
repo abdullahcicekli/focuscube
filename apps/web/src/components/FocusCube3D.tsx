@@ -12,6 +12,8 @@ type Props = {
   rollSignal: number
   rollDir: 1 | -1 | 0
   color?: string
+  autoRotate?: boolean
+  onUserRotate?: () => void
 }
 
 const QUARTER = Math.PI / 2
@@ -86,6 +88,7 @@ function CubeMesh({
   paused,
   rollSignal,
   rollDir,
+  autoRotate = false,
   color = "#c9b794",
 }: Props) {
   const cubeGroup = useRef<THREE.Group>(null!)
@@ -201,6 +204,15 @@ function CubeMesh({
         ? 1 + Math.sin(state.clock.elapsedTime * 3.5) * 0.012
         : 1
       cg.scale.setScalar(pulse)
+
+      // Idle loop — cube stays rotated toward the left, X tilts through
+      // up and down. Path traces a vertical arc between down-left and
+      // up-left, repeating smoothly.
+      if (autoRotate) {
+        const t = state.clock.elapsedTime
+        cg.rotation.y = -0.9 + Math.sin(t * 0.18) * 0.12
+        cg.rotation.x = Math.sin(t * 0.32) * 0.55
+      }
     }
   })
 
@@ -274,6 +286,7 @@ function CubeMesh({
 
 export function FocusCube3D(props: Props) {
   const [grabbing, setGrabbing] = useState(false)
+  const { autoRotate = false, onUserRotate, ...rest } = props
   return (
     <Canvas
       camera={{ position: [0.25, 0.7, 5.8], fov: 30 }}
@@ -296,7 +309,7 @@ export function FocusCube3D(props: Props) {
       <directionalLight position={[-4, 2, -1]} intensity={0.35} />
       <directionalLight position={[0, -3, 4]} intensity={0.18} />
       <Suspense fallback={null}>
-        <CubeMesh {...props} />
+        <CubeMesh {...rest} autoRotate={autoRotate} />
         <Environment preset="apartment" />
       </Suspense>
       <OrbitControls
@@ -305,6 +318,7 @@ export function FocusCube3D(props: Props) {
         enableDamping
         dampingFactor={0.12}
         rotateSpeed={0.8}
+        onStart={onUserRotate}
         minPolarAngle={Math.PI * 0.18}
         maxPolarAngle={Math.PI * 0.82}
         minAzimuthAngle={-Math.PI * 0.6}

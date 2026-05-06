@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { oauthStartUrl } from "@/lib/api"
 
 const FEATURES = [
   "Sync across devices",
@@ -19,10 +20,9 @@ const FEATURES = [
 
 type Props = {
   trigger: React.ReactNode
-  onProvider?: (provider: "google" | "github") => void
 }
 
-export function LoginModal({ trigger, onProvider }: Props) {
+export function LoginModal({ trigger }: Props) {
   return (
     <Dialog>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
@@ -76,32 +76,36 @@ export function LoginModal({ trigger, onProvider }: Props) {
 
             <div className="flex flex-col gap-3">
               <Button
+                asChild
                 variant="outline"
                 size="lg"
                 className="h-12 justify-start gap-3 px-4"
-                onClick={() => onProvider?.("google")}
               >
-                <GoogleIcon />
-                <span>Continue with Google</span>
+                <a href={oauthStartUrl("google")}>
+                  <GoogleIcon />
+                  <span>Continue with Google</span>
+                </a>
               </Button>
               <Button
+                asChild
                 variant="outline"
                 size="lg"
                 className="h-12 justify-start gap-3 px-4"
-                onClick={() => onProvider?.("github")}
               >
-                <GithubIcon />
-                <span>Continue with GitHub</span>
+                <a href={oauthStartUrl("github")}>
+                  <GithubIcon />
+                  <span>Continue with GitHub</span>
+                </a>
               </Button>
             </div>
 
             <p className="text-xs leading-relaxed text-muted-foreground">
               By continuing, you agree to the{" "}
-              <a href="#" className="underline-offset-2 hover:underline">
+              <a href="/terms" className="underline-offset-2 hover:underline">
                 terms of service
               </a>{" "}
               and{" "}
-              <a href="#" className="underline-offset-2 hover:underline">
+              <a href="/privacy" className="underline-offset-2 hover:underline">
                 privacy policy
               </a>
               .

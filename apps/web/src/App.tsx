@@ -12,6 +12,7 @@ import { FocusCube3D } from "@/components/FocusCube3D"
 import { Navbar } from "@/components/Navbar"
 import { playChime } from "@/lib/chime"
 import type { ScreenContent } from "@/lib/screenTexture"
+import { useUser } from "@/lib/useUser"
 
 type Mode = {
   id: string
@@ -60,6 +61,8 @@ const MODES: ReadonlyArray<Mode> = [
 const DEFAULT_INDEX = 1 // 1%
 
 export default function App() {
+  const { state: userState, setAnon } = useUser()
+
   const [modeIdx, setModeIdx] = useState(DEFAULT_INDEX)
   const mode = MODES[modeIdx]!
 
@@ -141,10 +144,10 @@ export default function App() {
   })()
 
   return (
-    <div className="min-h-dvh w-full bg-background">
-      <Navbar />
+    <div className="flex min-h-dvh w-full flex-col bg-background">
+      <Navbar state={userState} onSignOut={setAnon} />
 
-      <main className="mx-auto flex w-full max-w-3xl flex-col items-center gap-8 px-6 pb-16">
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-8 px-6 py-8">
         <h1 className="sr-only">
           focuscube — 1% of Your Day · Pomodoro &amp; Deep Focus Timer
         </h1>
@@ -221,10 +224,74 @@ export default function App() {
         </section>
       </main>
 
-      <footer className="mx-auto w-full max-w-md px-6 pb-10 text-center text-xs leading-relaxed text-muted-foreground">
-        A soft chime plays when the time is up.
+      <footer className="mx-auto w-full max-w-3xl px-6 pb-10">
+        <div className="flex flex-col items-center gap-4 border-t border-border/50 pt-6 text-xs text-muted-foreground sm:flex-row sm:justify-between">
+          <p className="leading-relaxed">
+            A soft chime plays when the time is up.
+          </p>
+          <nav className="flex items-center gap-5">
+            <a
+              href="/privacy"
+              className="transition-colors hover:text-foreground"
+            >
+              Privacy
+            </a>
+            <a
+              href="/terms"
+              className="transition-colors hover:text-foreground"
+            >
+              Terms
+            </a>
+            <a
+              href="https://github.com/abdullahcicekli/focuscube"
+              target="_blank"
+              rel="noreferrer noopener"
+              aria-label="focuscube on GitHub"
+              className="transition-colors hover:text-foreground"
+            >
+              <GithubIcon />
+            </a>
+            <a
+              href="https://www.linkedin.com/in/abdullahcicekli/"
+              target="_blank"
+              rel="noreferrer noopener"
+              aria-label="Abdullah Çiçekli on LinkedIn"
+              className="transition-colors hover:text-foreground"
+            >
+              <LinkedinIcon />
+            </a>
+          </nav>
+        </div>
       </footer>
     </div>
+  )
+}
+
+function GithubIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="shrink-0 fill-current"
+    >
+      <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56v-2c-3.2.7-3.87-1.36-3.87-1.36-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.24 3.34.95.1-.74.4-1.24.72-1.53-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.18a10.94 10.94 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.59.23 2.76.11 3.05.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.13v3.16c0 .31.21.68.8.56 4.57-1.52 7.85-5.83 7.85-10.91C23.5 5.65 18.35.5 12 .5Z" />
+    </svg>
+  )
+}
+
+function LinkedinIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="shrink-0 fill-current"
+    >
+      <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.36V9h3.41v1.56h.05c.47-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z" />
+    </svg>
   )
 }
 

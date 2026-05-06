@@ -2,6 +2,8 @@ import { Hono } from "hono"
 import { cors } from "hono/cors"
 
 import type { AppVariables, Bindings } from "./types"
+import { sessionMiddleware } from "./middleware/auth"
+import { authRoute } from "./routes/auth"
 import { sessionsRoute } from "./routes/sessions"
 import { statsRoute } from "./routes/stats"
 
@@ -17,12 +19,15 @@ app.use("*", async (c, next) => {
   return handler(c, next)
 })
 
+app.use("*", sessionMiddleware)
+
 app.get("/", (c) =>
   c.json({ name: "focuscube-api", env: c.env.ENV, ok: true })
 )
 
 app.get("/health", (c) => c.json({ ok: true, ts: Date.now() }))
 
+app.route("/auth", authRoute)
 app.route("/sessions", sessionsRoute)
 app.route("/stats", statsRoute)
 

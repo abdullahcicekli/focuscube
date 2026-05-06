@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react"
 import {
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
   Pause,
   Play,
   RotateCcw,
@@ -145,7 +146,7 @@ export default function App() {
       if (warningTimerRef.current) window.clearTimeout(warningTimerRef.current)
       warningTimerRef.current = window.setTimeout(
         () => setModeBlockedWarning(false),
-        2400
+        4000
       )
       return
     }
@@ -196,6 +197,32 @@ export default function App() {
       </div>
 
       <div className="relative z-10 flex min-h-dvh w-full flex-col">
+      <a
+        href="https://outpost.binalyze.ai"
+        target="_blank"
+        rel="noreferrer noopener"
+        className="flex h-9 w-full cursor-pointer items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap border-b border-white/20 bg-muted/40 px-3 font-['Bangers'] text-[11px] tracking-wider text-muted-foreground transition-opacity hover:opacity-90 sm:h-10 sm:gap-2 sm:px-4 sm:text-sm"
+      >
+        <img
+          src="/sponsors/outpost.svg"
+          alt="Outpost"
+          className="h-4 w-auto sm:h-5"
+        />
+        <span
+          aria-hidden="true"
+          className="h-3 w-px bg-muted-foreground/40 sm:h-4"
+        />
+        <span>
+          <span className="sm:hidden">
+            <span className="text-[#E8342B]">Free Chrome extension</span>
+          </span>
+          <span className="hidden sm:inline">
+            Spot IOCs on any page —{" "}
+            <span className="text-[#E8342B]">free Chrome extension</span>
+          </span>
+        </span>
+        <ExternalLink className="size-3 text-[#E8342B] sm:size-3.5" />
+      </a>
       <Navbar state={userState} onSignOut={setAnon} />
 
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center gap-8 px-6 py-8 lg:px-10">
@@ -209,7 +236,7 @@ export default function App() {
               size="icon"
               onClick={() => tryChangeMode(-1)}
               aria-label="Previous mode"
-              className={running || paused ? "opacity-60" : undefined}
+              className={`size-11 [&_svg]:size-6 ${running || paused ? "opacity-60" : ""}`}
             >
               <ChevronLeft />
             </Button>
@@ -226,7 +253,7 @@ export default function App() {
               size="icon"
               onClick={() => tryChangeMode(1)}
               aria-label="Next mode"
-              className={running || paused ? "opacity-60" : undefined}
+              className={`size-11 [&_svg]:size-6 ${running || paused ? "opacity-60" : ""}`}
             >
               <ChevronRight />
             </Button>

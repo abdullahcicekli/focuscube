@@ -1,6 +1,5 @@
 import * as React from "react"
 import * as TooltipPrimitive from "@radix-ui/react-tooltip"
-import { motion } from "motion/react"
 
 import { cn } from "@/lib/utils"
 
@@ -16,31 +15,31 @@ export const TooltipTrigger = TooltipPrimitive.Trigger
 
 type TooltipContentProps = React.ComponentProps<
   typeof TooltipPrimitive.Content
-> & {
-  children: React.ReactNode
-}
+>
 
 export function TooltipContent({
   className,
   sideOffset = 6,
-  children,
   ...props
 }: TooltipContentProps) {
   return (
     <TooltipPrimitive.Portal>
-      <TooltipPrimitive.Content asChild sideOffset={sideOffset} {...props}>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.92, y: 4 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ type: "spring", stiffness: 320, damping: 28 }}
-          className={cn(
-            "z-50 rounded-md bg-foreground px-2.5 py-1 text-[11px] font-medium text-background shadow-md",
-            className
-          )}
-        >
-          {children}
-        </motion.div>
-      </TooltipPrimitive.Content>
+      <TooltipPrimitive.Content
+        sideOffset={sideOffset}
+        className={cn(
+          "z-50 rounded-md bg-foreground px-2.5 py-1 text-[11px] font-medium text-background shadow-md",
+          "origin-[--radix-tooltip-content-transform-origin]",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out",
+          "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+          "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+          "data-[side=bottom]:slide-in-from-top-1",
+          "data-[side=left]:slide-in-from-right-1",
+          "data-[side=right]:slide-in-from-left-1",
+          "data-[side=top]:slide-in-from-bottom-1",
+          className
+        )}
+        {...props}
+      />
     </TooltipPrimitive.Portal>
   )
 }

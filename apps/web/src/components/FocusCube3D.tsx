@@ -238,12 +238,11 @@ function CubeMesh({
       >
         <meshPhysicalMaterial
           color={color}
-          roughness={0.62}
-          clearcoat={0.12}
-          clearcoatRoughness={0.7}
-          sheen={0.4}
-          sheenRoughness={0.85}
-          sheenColor={"#fff7e6"}
+          roughness={0.45}
+          clearcoat={0.22}
+          clearcoatRoughness={0.5}
+          sheen={0}
+          envMapIntensity={0.25}
         />
       </RoundedBox>
 
@@ -307,16 +306,26 @@ export function FocusCube3D(props: Props) {
       onPointerUp={() => setGrabbing(false)}
       onPointerLeave={() => setGrabbing(false)}
     >
-      <ambientLight intensity={0.5} />
+      <ambientLight intensity={0.1} />
+      {/* Two pure-axis key lights — Key1 along +X, Key2 along +Z.
+          Y component is exactly 0 on both, so the top (+Y) face receives no
+          direct light from either key and falls into shadow alongside the
+          left (-X) and bottom (-Y) faces — matching the soft gradient those
+          faces already showed under the previous setup. */}
       <directionalLight
-        position={[4, 6, 5]}
-        intensity={1.15}
+        position={[5, 0, 0]}
+        intensity={1.2}
         castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-bias={-0.0003}
       />
-      <directionalLight position={[-4, 2, -1]} intensity={0.35} />
-      <directionalLight position={[0, -3, 4]} intensity={0.18} />
+      <directionalLight position={[0, 0, 5]} intensity={1.0} />
+      <directionalLight position={[-4, 1, -1]} intensity={0.32} />
+      <directionalLight position={[0, -3, 4]} intensity={0.2} />
+      {/* Rim lights at Y=0 so the top face isn't lit from above. */}
+      <directionalLight position={[-5, 0, -3]} intensity={0.35} color="#fff2d9" />
+      <directionalLight position={[5, 0, -3]} intensity={0.3} color="#dde6ff" />
       <Suspense fallback={null}>
         <CubeMesh {...rest} autoRotate={autoRotate} />
         <Environment preset="apartment" />
@@ -339,7 +348,7 @@ export function FocusCube3D(props: Props) {
         receiveShadow
       >
         <circleGeometry args={[2.6, 64]} />
-        <shadowMaterial transparent opacity={0.22} />
+        <shadowMaterial transparent opacity={0.32} />
       </mesh>
     </Canvas>
   )

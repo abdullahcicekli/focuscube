@@ -1,14 +1,17 @@
-import { Flame, LogOut } from "lucide-react"
+import { HelpCircle, LogOut } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { LoginModal } from "@/components/LoginModal"
 import { logout } from "@/lib/api"
 import type { UserState } from "@/lib/useUser"
@@ -104,7 +107,7 @@ function UserMenu({
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent>
+      <DropdownMenuContent className="min-w-64">
         <div className="px-2.5 pb-2 pt-2">
           <p className="truncate text-sm font-medium">{name}</p>
           {name !== email && (
@@ -116,45 +119,81 @@ function UserMenu({
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuLabel>Streak</DropdownMenuLabel>
-        <StreakBox stats={statsState} />
+        <div className="px-2.5 pb-1 pt-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+              Your focus
+            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="What is a streak?"
+                  className="cursor-pointer text-muted-foreground/70 transition-colors hover:text-foreground"
+                >
+                  <HelpCircle className="size-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="left" className="max-w-[200px] text-left">
+                A streak counts each consecutive day you complete at least one
+                focus session. Miss a day and it resets to zero.
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+        <StatsBlock stats={statsState} />
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem onSelect={handleSignOut}>
-          <LogOut className="size-4" />
-          Sign out
-        </DropdownMenuItem>
+        <div className="flex justify-end px-2.5 pb-2 pt-1">
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <LogOut className="size-3" />
+            Sign out
+          </button>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   )
 }
 
-function StreakBox({
+function StatsBlock({
   stats,
 }: {
   stats: ReturnType<typeof useStats>["state"]
 }) {
-  // Keep the last-known stats visible while a refresh is in flight.
   const data = stats.stats
   const isLoading = stats.status === "loading" && !data
   const isError = stats.status === "error"
+  const hasSessions = (data?.sessions ?? 0) > 0
+
+  const display = (n: number | undefined) =>
+    isLoading ? "…" : isError ? "—" : String(n ?? 0)
 
   return (
-    <div className="mx-1 mb-1 grid grid-cols-3 gap-2 rounded-md border border-border/50 bg-background/40 p-2">
-      <Stat
-        label="Current"
-        value={isLoading ? "…" : isError ? "—" : String(data?.streak.current ?? 0)}
-        icon={<Flame className="size-3.5 text-orange-400" />}
-      />
-      <Stat
-        label="Longest"
-        value={isLoading ? "…" : isError ? "—" : String(data?.streak.longest ?? 0)}
-      />
-      <Stat
-        label="Sessions"
-        value={isLoading ? "…" : isError ? "—" : String(data?.sessions ?? 0)}
-      />
+    <div className="mx-1 mb-1 space-y-1.5">
+      <div className="grid grid-cols-3 gap-2 rounded-md border border-border/50 bg-background/40 p-2">
+        <Stat label="Current" value={display(data?.streak.current)} suffix="d" />
+        <Stat label="Longest" value={display(data?.streak.longest)} suffix="d" />
+        <Stat
+          label="Total"
+          value={
+            isLoading
+              ? "…"
+              : isError
+                ? "—"
+                : formatDuration(data?.seconds ?? 0)
+          }
+        />
+      </div>
+      {!isLoading && !isError && !hasSessions && (
+        <p className="px-1 text-center text-[10px] leading-relaxed text-muted-foreground">
+          Finish your first session to start a streak.
+        </p>
+      )}
     </div>
   )
 }
@@ -162,22 +201,34 @@ function StreakBox({
 function Stat({
   label,
   value,
-  icon,
+  suffix,
 }: {
   label: string
   value: string
-  icon?: React.ReactNode
+  suffix?: string
 }) {
   return (
     <div className="flex flex-col items-center gap-0.5">
       <span className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
         {label}
       </span>
-      <span className="flex items-center gap-1 font-display text-base tabular-nums">
-        {icon}
+      <span className="font-display text-base tabular-nums">
         {value}
+        {suffix && value !== "…" && value !== "—" && (
+          <span className="ml-0.5 text-[10px] font-normal text-muted-foreground">
+            {suffix}
+          </span>
+        )}
       </span>
     </div>
   )
 }
 
+function formatDuration(totalSeconds: number): string {
+  if (totalSeconds <= 0) return "0m"
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  if (hours === 0) return `${minutes}m`
+  if (minutes === 0) return `${hours}h`
+  return `${hours}h ${minutes}m`
+}

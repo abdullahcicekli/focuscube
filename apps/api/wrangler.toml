@@ -3,12 +3,9 @@ main = "src/index.ts"
 compatibility_date = "2026-04-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Custom domain — bind api.focuscube.app to this Worker after first deploy.
-# (Set up via Cloudflare dashboard → Workers → Custom Domains, or uncomment
-# the route block below once the worker exists.)
-# [[routes]]
-# pattern = "api.focuscube.app"
-# custom_domain = true
+[[routes]]
+pattern = "api.focuscube.app"
+custom_domain = true
 
 # D1 database binding. After running `npm run db:create --workspace=@focuscube/api`,
 # paste the printed database_id below.

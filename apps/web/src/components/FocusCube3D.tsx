@@ -205,13 +205,22 @@ function CubeMesh({
         : 1
       cg.scale.setScalar(pulse)
 
-      // Idle loop — cube stays rotated toward the left, X tilts through
-      // up and down. Path traces a vertical arc between down-left and
-      // up-left, repeating smoothly.
+      // Idle loop — DOWN → LEFT → UP → RIGHT, repeating. X and Y at the
+      // same frequency 90° out of phase trace a clean ellipse so every side
+      // face surfaces in turn. Amplitudes ramp from 0 over ~5s so the cube
+      // starts dead-on facing the camera and eases into the loop.
       if (autoRotate) {
         const t = state.clock.elapsedTime
-        cg.rotation.y = -0.9 + Math.sin(t * 0.18) * 0.12
-        cg.rotation.x = Math.sin(t * 0.32) * 0.55
+        const phase = t * 0.22
+        const ramp = THREE.MathUtils.smoothstep(t, 0, 5)
+        cg.rotation.x = Math.cos(phase) * 0.55 * ramp
+        cg.rotation.y = -Math.sin(phase) * 0.44 * ramp
+      } else {
+        // Once the user takes over, return the cube to its identity pose
+        // so OrbitControls' azimuth/polar limits stay relative to the
+        // screen-facing front, not whatever angle the idle loop left.
+        cg.rotation.x = THREE.MathUtils.damp(cg.rotation.x, 0, 6, delta)
+        cg.rotation.y = THREE.MathUtils.damp(cg.rotation.y, 0, 6, delta)
       }
     }
   })
@@ -319,10 +328,10 @@ export function FocusCube3D(props: Props) {
         dampingFactor={0.12}
         rotateSpeed={0.8}
         onStart={onUserRotate}
-        minPolarAngle={Math.PI * 0.18}
-        maxPolarAngle={Math.PI * 0.82}
-        minAzimuthAngle={-Math.PI * 0.6}
-        maxAzimuthAngle={Math.PI * 0.6}
+        minPolarAngle={Math.PI * 0.28}
+        maxPolarAngle={Math.PI * 0.72}
+        minAzimuthAngle={-Math.PI * 0.22}
+        maxAzimuthAngle={Math.PI * 0.22}
       />
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}

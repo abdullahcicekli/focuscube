@@ -3,10 +3,12 @@ import { motion, useMotionValue, useSpring } from "motion/react"
 
 const INTERACTIVE_SELECTOR =
   'a, button, [role="button"], [role="menuitem"], input, textarea, select, [data-cursor="hover"]'
+const DRAG_SELECTOR = '[data-cursor="drag"]'
 
 export function Cursor() {
   const [enabled, setEnabled] = useState(false)
   const [hovering, setHovering] = useState(false)
+  const [dragging, setDragging] = useState(false)
   const [pressed, setPressed] = useState(false)
   const [visible, setVisible] = useState(false)
 
@@ -31,7 +33,11 @@ export function Cursor() {
       y.set(e.clientY)
       if (!visible) setVisible(true)
       const target = e.target as HTMLElement | null
-      setHovering(Boolean(target?.closest(INTERACTIVE_SELECTOR)))
+      const inDrag = Boolean(target?.closest(DRAG_SELECTOR))
+      setDragging(inDrag)
+      setHovering(
+        !inDrag && Boolean(target?.closest(INTERACTIVE_SELECTOR))
+      )
     }
     const down = () => setPressed(true)
     const up = () => setPressed(false)
@@ -54,8 +60,16 @@ export function Cursor() {
 
   if (!enabled) return null
 
-  const ringScale = pressed ? 0.85 : hovering ? 1.7 : 1
-  const dotScale = pressed ? 1.4 : hovering ? 0.4 : 1
+  const ringScale = dragging
+    ? pressed
+      ? 1.4
+      : 1.9
+    : pressed
+      ? 0.85
+      : hovering
+        ? 1.7
+        : 1
+  const dotScale = dragging ? 0 : pressed ? 1.4 : hovering ? 0.4 : 1
 
   return (
     <>
@@ -63,14 +77,20 @@ export function Cursor() {
         aria-hidden="true"
         className="pointer-events-none fixed left-0 top-0 z-[9999] h-8 w-8 rounded-full border border-white mix-blend-difference"
         style={{ x: cx, y: cy, translateX: "-50%", translateY: "-50%" }}
-        animate={{ scale: ringScale, opacity: visible ? 1 : 0 }}
+        animate={{
+          scale: ringScale,
+          opacity: visible ? 1 : 0,
+          backgroundColor: dragging
+            ? "rgba(255,255,255,1)"
+            : "rgba(255,255,255,0)",
+        }}
         transition={{ type: "spring", stiffness: 300, damping: 24 }}
       />
       <motion.div
         aria-hidden="true"
         className="pointer-events-none fixed left-0 top-0 z-[9999] h-1.5 w-1.5 rounded-full bg-white mix-blend-difference"
         style={{ x, y, translateX: "-50%", translateY: "-50%" }}
-        animate={{ scale: dotScale, opacity: visible ? 1 : 0 }}
+        animate={{ scale: dotScale, opacity: visible && !dragging ? 1 : 0 }}
         transition={{ type: "spring", stiffness: 700, damping: 30 }}
       />
     </>

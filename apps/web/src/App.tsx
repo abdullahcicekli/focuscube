@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { AnimatePresence, motion } from "motion/react"
 import {
   ChevronLeft,
   ChevronRight,
@@ -86,9 +87,11 @@ export default function App() {
   const [paused, setPaused] = useState(false)
   const [rollSignal, setRollSignal] = useState(0)
   const [rollDir, setRollDir] = useState<1 | -1 | 0>(0)
+  const [modeBlockedWarning, setModeBlockedWarning] = useState(false)
 
   const tickRef = useRef<number | null>(null)
   const endTimeRef = useRef<number | null>(null)
+  const warningTimerRef = useRef<number | null>(null)
 
   // Read latest auth state inside the tick closure without restarting the timer.
   const userStatusRef = useRef(userState.status)
@@ -134,6 +137,19 @@ export default function App() {
     endTimeRef.current = null
     setRollDir(dir)
     setRollSignal((n) => n + 1)
+  }
+
+  function tryChangeMode(dir: 1 | -1) {
+    if (running || paused) {
+      setModeBlockedWarning(true)
+      if (warningTimerRef.current) window.clearTimeout(warningTimerRef.current)
+      warningTimerRef.current = window.setTimeout(
+        () => setModeBlockedWarning(false),
+        2400
+      )
+      return
+    }
+    changeMode(dir)
   }
 
   function start() {
@@ -191,9 +207,9 @@ export default function App() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => changeMode(-1)}
-              disabled={running || paused}
+              onClick={() => tryChangeMode(-1)}
               aria-label="Previous mode"
+              className={running || paused ? "opacity-60" : undefined}
             >
               <ChevronLeft />
             </Button>
@@ -208,13 +224,29 @@ export default function App() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => changeMode(1)}
-              disabled={running || paused}
+              onClick={() => tryChangeMode(1)}
               aria-label="Next mode"
+              className={running || paused ? "opacity-60" : undefined}
             >
               <ChevronRight />
             </Button>
           </div>
+
+          <AnimatePresence>
+            {modeBlockedWarning && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.2 }}
+                role="alert"
+                className="text-xs text-amber-400/90"
+              >
+                A focus session is running — let it finish, or reset to
+                switch modes.
+              </motion.p>
+            )}
+          </AnimatePresence>
 
           <div className="flex items-center justify-center gap-3">
             <RippleButton
@@ -248,7 +280,10 @@ export default function App() {
           </p>
         </section>
 
-        <section className="relative aspect-square w-full max-w-[520px]">
+        <section
+          data-cursor="drag"
+          className="relative aspect-square w-full max-w-[520px]"
+        >
           <FocusCube3D
             screen={screen}
             running={running}

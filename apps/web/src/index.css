@@ -3,6 +3,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Hide native cursor on hover-capable devices — the custom <Cursor /> takes
+   over. Touch devices and reduced-motion users keep the native pointer. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  html,
+  html * {
+    cursor: none !important;
+  }
+}
+
 @font-face {
   font-family: "TBJ Serial Port Monospace";
   src: url("/fonts/TBJSerialPortMonospaceDemo-Th-BF69d4cbd6a5fea.ttf") format("truetype");

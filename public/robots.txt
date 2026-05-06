@@ -1,0 +1,8 @@
+# https://focuscube.app/robots.txt
+User-agent: *
+Allow: /
+
+# Block crawler traps for assets that don't need indexing
+Disallow: /assets/
+
+Sitemap: https://focuscube.app/sitemap.xml

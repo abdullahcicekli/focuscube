@@ -1,0 +1,28 @@
+{
+  "name": "focuscube — 1% of Your Day Focus Timer",
+  "short_name": "focuscube",
+  "description": "A minimal focus timer built around the Atomic Habits 1% rule and the pomodoro technique. 5, 25, 60 minutes — or 14m 24s, exactly 1% of your day.",
+  "categories": ["productivity", "lifestyle", "utilities"],
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "332x332",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#1d1916",
+  "background_color": "#1d1916",
+  "display": "standalone",
+  "start_url": "/"
+}

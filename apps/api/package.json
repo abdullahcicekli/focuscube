@@ -7,7 +7,7 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "db:create": "wrangler d1 create focuscube",
-    "db:migrate:local": "wrangler d1 migrations apply focuscube --local",
+    "db:migrate:local": "wrangler d1 migrations apply focuscube --local --env dev",
     "db:migrate:remote": "wrangler d1 migrations apply focuscube --remote",
     "db:studio": "wrangler d1 execute focuscube --command \"SELECT name FROM sqlite_master WHERE type='table';\""
   },

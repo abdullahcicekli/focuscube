@@ -24,3 +24,11 @@ ENV = "production"
 [env.dev.vars]
 WEB_ORIGIN = "http://localhost:5173"
 ENV = "development"
+
+# Wrangler v4 does NOT inherit top-level resource bindings into named envs,
+# so the D1 binding must be re-declared here for `wrangler dev --env dev`.
+[[env.dev.d1_databases]]
+binding = "DB"
+database_name = "focuscube"
+database_id = "6369c480-4c1e-4294-a464-de9848b77474"
+migrations_dir = "migrations"

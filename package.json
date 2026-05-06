@@ -6,11 +6,15 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=@focuscube/web",
-    "dev:api": "npm run dev --workspace=@focuscube/api",
+    "dev": "concurrently -n web,api -c cyan,magenta -k \"npm:dev:web\" \"npm:dev:api\"",
+    "dev:web": "npm run dev --workspace=@focuscube/web",
+    "dev:api": "npm run dev --workspace=@focuscube/api -- --env dev",
     "build": "npm run build --workspace=@focuscube/web",
     "lint": "npm run lint --workspace=@focuscube/web",
     "deploy:web": "npm run deploy --workspace=@focuscube/web",
     "deploy:api": "npm run deploy --workspace=@focuscube/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
   }
 }

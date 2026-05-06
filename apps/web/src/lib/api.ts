@@ -26,3 +26,31 @@ export async function logout(): Promise<void> {
 
 export const oauthStartUrl = (provider: "google" | "github") =>
   `${API_BASE}/auth/${provider}`
+
+export type ModeId = "5" | "1pct" | "25" | "60"
+
+export type Stats = {
+  sessions: number
+  seconds: number
+  streak: { current: number; longest: number }
+  days: string[]
+}
+
+export async function fetchStats(): Promise<Stats | null> {
+  const res = await fetch(`${API_BASE}/stats`, { credentials: "include" })
+  if (!res.ok) return null
+  return (await res.json()) as Stats
+}
+
+export async function recordSession(input: {
+  modeId: ModeId
+  durationSec: number
+}): Promise<boolean> {
+  const res = await fetch(`${API_BASE}/sessions`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  })
+  return res.ok
+}

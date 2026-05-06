@@ -8,8 +8,18 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { GridPattern } from "@/components/ui/grid-pattern"
+import { RippleButton } from "@/components/ui/ripple-button"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { Cursor } from "@/components/Cursor"
 import { FocusCube3D } from "@/components/FocusCube3D"
 import { Navbar } from "@/components/Navbar"
+import { recordSession, type ModeId } from "@/lib/api"
 import { playChime } from "@/lib/chime"
 import type { ScreenContent } from "@/lib/screenTexture"
 import { useUser } from "@/lib/useUser"
@@ -66,6 +76,11 @@ export default function App() {
   const [modeIdx, setModeIdx] = useState(DEFAULT_INDEX)
   const mode = MODES[modeIdx]!
 
+  // Cube spins gently on first load until the user grabs it once.
+  const [autoRotate, setAutoRotate] = useState(
+    () => !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+  )
+
   const [remainingSec, setRemainingSec] = useState(mode.sec)
   const [running, setRunning] = useState(false)
   const [paused, setPaused] = useState(false)
@@ -74,6 +89,10 @@ export default function App() {
 
   const tickRef = useRef<number | null>(null)
   const endTimeRef = useRef<number | null>(null)
+
+  // Read latest auth state inside the tick closure without restarting the timer.
+  const userStatusRef = useRef(userState.status)
+  userStatusRef.current = userState.status
 
   // Tick loop (drift-corrected via endTimeRef)
   useEffect(() => {
@@ -90,6 +109,12 @@ export default function App() {
         setPaused(false)
         endTimeRef.current = null
         playChime()
+        if (userStatusRef.current === "authed") {
+          void recordSession({
+            modeId: mode.id as ModeId,
+            durationSec: mode.sec,
+          })
+        }
         return
       }
       tickRef.current = window.setTimeout(tick, 250)
@@ -98,7 +123,7 @@ export default function App() {
     return () => {
       if (tickRef.current) window.clearTimeout(tickRef.current)
     }
-  }, [running, paused])
+  }, [running, paused, mode])
 
   function changeMode(dir: 1 | -1) {
     const next = (modeIdx + dir + MODES.length) % MODES.length
@@ -144,10 +169,20 @@ export default function App() {
   })()
 
   return (
-    <div className="flex min-h-dvh w-full flex-col bg-background">
+    <TooltipProvider>
+    <Cursor />
+    <div className="relative flex min-h-dvh w-full flex-col bg-background">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-0 [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]"
+      >
+        <GridPattern variant="default" />
+      </div>
+
+      <div className="relative z-10 flex min-h-dvh w-full flex-col">
       <Navbar state={userState} onSignOut={setAnon} />
 
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-8 px-6 py-8">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center gap-8 px-6 py-8 lg:px-10">
         <h1 className="sr-only">
           focuscube — 1% of Your Day · Pomodoro &amp; Deep Focus Timer
         </h1>
@@ -182,7 +217,7 @@ export default function App() {
           </div>
 
           <div className="flex items-center justify-center gap-3">
-            <Button
+            <RippleButton
               size="lg"
               className="min-w-32"
               onClick={togglePlay}
@@ -197,7 +232,7 @@ export default function App() {
                   <Play /> {paused ? "Resume" : "Start"}
                 </>
               )}
-            </Button>
+            </RippleButton>
             <Button
               size="lg"
               variant="outline"
@@ -220,11 +255,13 @@ export default function App() {
             paused={paused}
             rollSignal={rollSignal}
             rollDir={rollDir}
+            autoRotate={autoRotate}
+            onUserRotate={() => setAutoRotate(false)}
           />
         </section>
       </main>
 
-      <footer className="mx-auto w-full max-w-3xl px-6 pb-10">
+      <footer className="mx-auto w-full max-w-7xl px-6 pb-10 lg:px-10">
         <div className="flex flex-col items-center gap-4 border-t border-border/50 pt-6 text-xs text-muted-foreground sm:flex-row sm:justify-between">
           <p className="leading-relaxed">
             A soft chime plays when the time is up.
@@ -242,28 +279,40 @@ export default function App() {
             >
               Terms
             </a>
-            <a
-              href="https://github.com/abdullahcicekli/focuscube"
-              target="_blank"
-              rel="noreferrer noopener"
-              aria-label="focuscube on GitHub"
-              className="transition-colors hover:text-foreground"
-            >
-              <GithubIcon />
-            </a>
-            <a
-              href="https://www.linkedin.com/in/abdullahcicekli/"
-              target="_blank"
-              rel="noreferrer noopener"
-              aria-label="Abdullah Çiçekli on LinkedIn"
-              className="transition-colors hover:text-foreground"
-            >
-              <LinkedinIcon />
-            </a>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <a
+                  href="https://github.com/abdullahcicekli/focuscube"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  aria-label="focuscube on GitHub"
+                  className="transition-colors hover:text-foreground"
+                >
+                  <GithubIcon />
+                </a>
+              </TooltipTrigger>
+              <TooltipContent>GitHub repo</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <a
+                  href="https://www.linkedin.com/in/abdullahcicekli/"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  aria-label="Abdullah Çiçekli on LinkedIn"
+                  className="transition-colors hover:text-foreground"
+                >
+                  <LinkedinIcon />
+                </a>
+              </TooltipTrigger>
+              <TooltipContent>Abdullah Çiçekli</TooltipContent>
+            </Tooltip>
           </nav>
         </div>
       </footer>
+      </div>
     </div>
+    </TooltipProvider>
   )
 }
 

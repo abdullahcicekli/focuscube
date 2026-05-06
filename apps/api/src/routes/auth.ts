@@ -25,7 +25,24 @@ export const authRoute = new Hono<{
 const STATE_COOKIE = "focuscube_oauth_state"
 const VERIFIER_COOKIE = "focuscube_oauth_verifier"
 const PROVIDER_COOKIE = "focuscube_oauth_provider"
+const RETURN_TO_COOKIE = "focuscube_oauth_returnto"
 const FLOW_COOKIE_TTL = 600 // 10 minutes
+
+// Allow redirecting back to the configured WEB_ORIGIN, and to any localhost
+// port in dev so Vite's port flexibility doesn't strand the user.
+function resolveReturnTo(env: Bindings, candidate: string | undefined): string {
+  if (!candidate) return env.WEB_ORIGIN
+  try {
+    const url = new URL(candidate)
+    if (url.origin === env.WEB_ORIGIN) return url.origin
+    if (env.ENV !== "production" && url.hostname === "localhost") {
+      return url.origin
+    }
+  } catch {
+    /* fall through */
+  }
+  return env.WEB_ORIGIN
+}
 
 // --- /auth/me ----------------------------------------------------------
 
@@ -62,7 +79,8 @@ authRoute.get("/google", (c) => {
     "email",
     "profile",
   ])
-  return startResponse(c.env, url, state, codeVerifier, "google")
+  const returnTo = resolveReturnTo(c.env, c.req.header("Referer"))
+  return startResponse(c.env, url, state, codeVerifier, "google", returnTo)
 })
 
 authRoute.get("/google/callback", async (c) => {
@@ -72,8 +90,9 @@ authRoute.get("/google/callback", async (c) => {
   const cookies = parseCookies(c.req.header("Cookie") ?? null)
   const storedState = cookies[STATE_COOKIE]
   const codeVerifier = cookies[VERIFIER_COOKIE]
+  const returnTo = resolveReturnTo(c.env, cookies[RETURN_TO_COOKIE])
   if (!code || !state || !storedState || state !== storedState || !codeVerifier) {
-    return errorRedirect(c.env, "invalid_oauth_state")
+    return errorRedirect("invalid_oauth_state", returnTo)
   }
 
   let tokens: OAuth2Tokens
@@ -83,7 +102,7 @@ authRoute.get("/google/callback", async (c) => {
       codeVerifier
     )
   } catch (err) {
-    return errorRedirect(c.env, oauthErrorMessage(err))
+    return errorRedirect(oauthErrorMessage(err), returnTo)
   }
 
   const profile = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
@@ -99,7 +118,7 @@ authRoute.get("/google/callback", async (c) => {
       : null
   )
   if (!profile?.sub || !profile.email) {
-    return errorRedirect(c.env, "google_profile_unavailable")
+    return errorRedirect("google_profile_unavailable", returnTo)
   }
 
   const { id: userId } = await upsertUserFromProvider(c.env.DB, {
@@ -110,7 +129,7 @@ authRoute.get("/google/callback", async (c) => {
     avatarUrl: profile.picture ?? null,
   })
 
-  return finishLogin(c.env, userId)
+  return finishLogin(c.env, userId, returnTo)
 })
 
 // --- /auth/github ------------------------------------------------------
@@ -121,7 +140,8 @@ authRoute.get("/github", (c) => {
     "read:user",
     "user:email",
   ])
-  return startResponse(c.env, url, state, null, "github")
+  const returnTo = resolveReturnTo(c.env, c.req.header("Referer"))
+  return startResponse(c.env, url, state, null, "github", returnTo)
 })
 
 authRoute.get("/github/callback", async (c) => {
@@ -130,15 +150,16 @@ authRoute.get("/github/callback", async (c) => {
   const state = url.searchParams.get("state")
   const cookies = parseCookies(c.req.header("Cookie") ?? null)
   const storedState = cookies[STATE_COOKIE]
+  const returnTo = resolveReturnTo(c.env, cookies[RETURN_TO_COOKIE])
   if (!code || !state || !storedState || state !== storedState) {
-    return errorRedirect(c.env, "invalid_oauth_state")
+    return errorRedirect("invalid_oauth_state", returnTo)
   }
 
   let tokens: OAuth2Tokens
   try {
     tokens = await githubProvider(c.env).validateAuthorizationCode(code)
   } catch (err) {
-    return errorRedirect(c.env, oauthErrorMessage(err))
+    return errorRedirect(oauthErrorMessage(err), returnTo)
   }
 
   const ghHeaders = {
@@ -160,7 +181,7 @@ authRoute.get("/github/callback", async (c) => {
         }>)
       : null
   )
-  if (!ghUser?.id) return errorRedirect(c.env, "github_profile_unavailable")
+  if (!ghUser?.id) return errorRedirect("github_profile_unavailable", returnTo)
 
   let email = ghUser.email
   if (!email) {
@@ -188,7 +209,7 @@ authRoute.get("/github/callback", async (c) => {
     avatarUrl: ghUser.avatar_url ?? null,
   })
 
-  return finishLogin(c.env, userId)
+  return finishLogin(c.env, userId, returnTo)
 })
 
 // --- helpers -----------------------------------------------------------
@@ -198,7 +219,8 @@ function startResponse(
   url: URL,
   state: string,
   codeVerifier: string | null,
-  provider: ProviderName
+  provider: ProviderName,
+  returnTo: string
 ): Response {
   const cookieOpts = {
     path: "/",
@@ -213,11 +235,16 @@ function startResponse(
     headers.append("Set-Cookie", buildCookie(VERIFIER_COOKIE, codeVerifier, cookieOpts))
   }
   headers.append("Set-Cookie", buildCookie(PROVIDER_COOKIE, provider, cookieOpts))
+  headers.append("Set-Cookie", buildCookie(RETURN_TO_COOKIE, returnTo, cookieOpts))
   headers.set("Location", url.toString())
   return new Response(null, { status: 302, headers })
 }
 
-async function finishLogin(env: Bindings, userId: string): Promise<Response> {
+async function finishLogin(
+  env: Bindings,
+  userId: string,
+  returnTo: string
+): Promise<Response> {
   const session = await createSession(env.DB, userId)
   const headers = new Headers()
   const expireOpts = {
@@ -230,6 +257,7 @@ async function finishLogin(env: Bindings, userId: string): Promise<Response> {
   headers.append("Set-Cookie", buildCookie(STATE_COOKIE, "", expireOpts))
   headers.append("Set-Cookie", buildCookie(VERIFIER_COOKIE, "", expireOpts))
   headers.append("Set-Cookie", buildCookie(PROVIDER_COOKIE, "", expireOpts))
+  headers.append("Set-Cookie", buildCookie(RETURN_TO_COOKIE, "", expireOpts))
   headers.append(
     "Set-Cookie",
     buildCookie(SESSION_COOKIE_NAME, session.id, {
@@ -241,12 +269,12 @@ async function finishLogin(env: Bindings, userId: string): Promise<Response> {
       maxAge: SESSION_TTL_SECONDS,
     })
   )
-  headers.set("Location", env.WEB_ORIGIN)
+  headers.set("Location", returnTo)
   return new Response(null, { status: 302, headers })
 }
 
-function errorRedirect(env: Bindings, code: string): Response {
-  const url = new URL(env.WEB_ORIGIN)
+function errorRedirect(code: string, returnTo: string): Response {
+  const url = new URL(returnTo)
   url.searchParams.set("auth_error", code)
   return new Response(null, { status: 302, headers: { Location: url.toString() } })
 }

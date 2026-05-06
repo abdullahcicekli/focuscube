@@ -11,7 +11,12 @@ const app = new Hono<{ Bindings: Bindings; Variables: AppVariables }>()
 
 app.use("*", async (c, next) => {
   const handler = cors({
-    origin: c.env.WEB_ORIGIN,
+    origin: (origin) => {
+      if (c.env.ENV !== "production" && /^http:\/\/localhost(:\d+)?$/.test(origin)) {
+        return origin
+      }
+      return origin === c.env.WEB_ORIGIN ? origin : null
+    },
     credentials: true,
     allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
